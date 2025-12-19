@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Comparación Real vs Predicción</title>
+
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<style>
+body {
+    background: linear-gradient(135deg, #020617, #0f172a);
+    color: #e5e7eb;
+}
+
+.table-box {
+    background: rgba(15,23,42,0.9);
+    border-radius: 1rem;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    overflow: hidden;
+    margin-bottom: 3rem;
+}
+
+th {
+    background: rgba(30,41,59,0.95);
+    font-size: 0.85rem;
+    padding: 10px;
+}
+
+td {
+    font-size: 0.85rem;
+    padding: 8px;
+}
+
+.empty {
+    color: #64748b;
+}
+</style>
+</head>
+
+<body class="p-10">
+
+<h1 class="text-2xl font-bold text-center mb-8">
+    Comparación Real con Predicción
+</h1>
+
+<form method="POST" class="text-center mb-10">
+    <select name="variedad"
+            onchange="this.form.submit()"
+            class="px-4 py-2 rounded-lg bg-slate-800 text-blue-400 font-semibold">
+        <option value="">Seleccione variedad</option>
+        {% for v in variedades %}
+            <option value="{{ v }}" {% if v == variedad_sel %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% macro tabla_render(tabla, titulo) %}
+<div class="table-box">
+<h2 class="text-xl font-semibold text-center my-4">{{ titulo }}</h2>
+<table class="w-full text-center">
+<thead>
+<tr>
+<th>PER</th><th>HW</th><th>LSTM</th><th>REAL</th>
+<th>DIF HW</th><th>DIF LSTM</th><th>ERR HW</th><th>ERR LSTM</th>
+</tr>
+</thead>
+<tbody>
+{% for f in tabla %}
+<tr class="border-b border-slate-700">
+<td>{{ f.values()|list|first }}</td>
+
+{% for k in ["HW","LSTM","REAL","DIF_HW","DIF_LSTM"] %}
+<td class="{{ 'empty' if f[k] is none }}">
+    {{ f[k] if f[k] is not none else "-" }}
+</td>
+{% endfor %}
+
+{% for k in ["ACC_HW","ACC_LSTM"] %}
+{% if f[k] is none %}
+<td class="empty">-</td>
+{% else %}
+<td style="background-color:{{ get_color(f[k]) }};
+           color:#000;
+           font-weight:600">
+    {{ f[k] }}%
+</td>
+{% endif %}
+{% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% if variedad_sel %}
+{{ tabla_render(tabla_12, "Mensual (12)") }}
+{{ tabla_render(tabla_26, "Cada 2 semanas (26)") }}
+{{ tabla_render(tabla_52, "Semanal (52)") }}
+{% endif %}
+
+</body>
+</html>
