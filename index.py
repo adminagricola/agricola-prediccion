@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from datetime import datetime, timedelta
-from meteostat import Point, daily
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.offline import plot
@@ -752,5 +751,6 @@ def resumen_dos():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
