@@ -3,10 +3,10 @@ gunicorn
 pandas
 numpy
 plotly
-meteostat
 statsmodels
 scikit-learn
 openpyxl
+
 
 
 
