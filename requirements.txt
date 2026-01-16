@@ -1,12 +1,13 @@
 flask
 gunicorn
-pandas<2.2
-numpy<2
+pandas
+numpy
 plotly
-meteostat==1.6.5
+meteostat
 statsmodels
 scikit-learn
 openpyxl
+
 
 
 
