@@ -3,8 +3,9 @@ gunicorn
 pandas
 numpy
 plotly
-meteostat
+meteostat==1.6.5
 statsmodels
 scikit-learn
 openpyxl
+
 
