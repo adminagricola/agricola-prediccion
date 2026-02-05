@@ -213,7 +213,7 @@ def produccion_dos():
             acc_lstm = error_pct(real, lstm)
 
             tabla.append({
-                label: int(key),
+                label: int(key) if key is not None and not pd.isna(key) else None,
                 "HW": hw,
                 "LSTM": lstm,
                 "REAL": real,
@@ -751,6 +751,7 @@ def resumen_dos():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
 
