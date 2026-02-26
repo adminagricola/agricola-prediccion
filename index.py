@@ -135,7 +135,7 @@ def produccion_dos():
     df_entrenamiento = df[
         (df["AÑO"] <= año_max_entrenamiento) &
         (df["AÑO"] >= año_max_entrenamiento - 3)
-    ]
+    ].copy()
 
     # =============================
     # 2. Leer datos reales
@@ -159,48 +159,60 @@ def produccion_dos():
         return round(abs(real - pred) / real * 100, 2)
 
     # =============================
-    # 4. Predicción semanal base
+    # 4. Predicción base (OPTIMIZADA)
     # =============================
-    filas = []
 
-    for variedad in sorted(df_entrenamiento["VARIEDAD"].unique()):
-        for semana in range(1, 53):
+    ult_año = df_entrenamiento[df_entrenamiento["AÑO"] == año_max_entrenamiento]
+    ult_2_años = df_entrenamiento[df_entrenamiento["AÑO"] >= año_max_entrenamiento - 1]
 
-            df_sem = df_entrenamiento[
-                (df_entrenamiento["VARIEDAD"] == variedad) &
-                (df_entrenamiento["SEMANA"] == semana)
-            ]
+    hw_df = (
+        ult_año
+        .groupby(["VARIEDAD", "SEMANA"])["TALLOS"]
+        .mean()
+        .round(2)
+        .reset_index(name="HW")
+    )
 
-            serie = (
-                df_sem.sort_values("AÑO")
-                .set_index("AÑO")["TALLOS"]
-                .dropna()
-            )
+    lstm_df = (
+        ult_2_años
+        .groupby(["VARIEDAD", "SEMANA"])["TALLOS"]
+        .mean()
+        .round(2)
+        .reset_index(name="LSTM")
+    )
 
-            if len(serie) < 3:
-                hw = None
-                lstm = None
-            else:
-                hw = round(serie[serie.index >= año_max_entrenamiento].mean(), 2)
-                lstm = round(serie[serie.index >= año_max_entrenamiento - 1].mean(), 2)
+    reales_df = (
+        df_reales
+        .groupby(["VARIEDAD", "SEMANA"])["TALLOS"]
+        .sum()
+        .reset_index(name="REAL")
+    )
 
-            real_data = df_reales[
-                (df_reales["VARIEDAD"] == variedad) &
-                (df_reales["SEMANA"] == semana)
-            ]
+    base = pd.merge(hw_df, lstm_df, on=["VARIEDAD", "SEMANA"], how="outer")
+    base = pd.merge(base, reales_df, on=["VARIEDAD", "SEMANA"], how="left")
 
-            real = real_data["TALLOS"].sum() if not real_data.empty else None
+    # asegurar todas las semanas 1..52 por variedad
+    variedades = sorted(df_entrenamiento["VARIEDAD"].unique())
+    semanas = pd.DataFrame({"SEMANA": range(1, 53)})
 
-            filas.append([variedad, semana, hw, lstm, real])
+    completos = []
+    for v in variedades:
+        tmp = semanas.copy()
+        tmp["VARIEDAD"] = v
+        completos.append(tmp)
 
-    df_base = pd.DataFrame(filas, columns=["VARIEDAD", "SEMANA", "HW", "LSTM", "REAL"])
+    grid = pd.concat(completos, ignore_index=True)
+
+    df_base = grid.merge(base, on=["VARIEDAD", "SEMANA"], how="left")
 
     # =============================
-    # 5. Construir tablas agregadas (ANTI NaN)
+    # 5. Construir tablas agregadas
     # =============================
     def build_table(df, label):
         tabla = []
+
         for key, g in df.groupby(label):
+
             hw = g["HW"].sum(min_count=1)
             lstm = g["LSTM"].sum(min_count=1)
             real = g["REAL"].sum(min_count=1)
@@ -222,6 +234,7 @@ def produccion_dos():
                 "ACC_HW": acc_hw,
                 "ACC_LSTM": acc_lstm
             })
+
         return tabla
 
     variedades = sorted(df_base["VARIEDAD"].unique())
@@ -241,7 +254,7 @@ def produccion_dos():
         tabla_52 = build_table(df_v, "SEMANA")
 
     # =============================
-    # 6. Color SOLO con valor válido
+    # 6. Color
     # =============================
     def get_color(val):
         if val is None or isinstance(val, float) and math.isnan(val):
@@ -263,8 +276,6 @@ def produccion_dos():
         tabla_52=tabla_52,
         get_color=get_color
     )
-
-
 # ----------------------------
 # PANTALLA 2 ARRIBA
 # ----------------------------
@@ -751,6 +762,7 @@ def resumen_dos():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
 
